@@ -406,21 +406,33 @@ class GridLabelWidget(QtWidgets.QWidget):
 
 
 class NiceCheckboxMoveWidget(QtWidgets.QFrame):
-    def __init__(self, height, border_width, parent):
+    def __init__(self, parent):
         super(NiceCheckboxMoveWidget, self).__init__(parent=parent)
 
         self.checkstate = False
 
-        self.half_size = int(height / 2)
-        self.full_size = self.half_size * 2
-        self.border_width = border_width
-        self.setFixedHeight(self.full_size)
-        self.setFixedWidth(self.full_size)
+        self.border_width = 0
+        self.half_size = 0
+        self.full_size = 0
 
+    def set_size(self, size):
+        border_width = int(size / 10)
+        if border_width < 1:
+            border_width = 1
+
+        half_size = int((size - (2 * border_width)) / 2)
+        full_size = half_size * 2
+
+        self.setFixedHeight(full_size)
+        self.setFixedWidth(full_size)
         self.setStyleSheet((
             "background: #444444;border-style: none;"
             "border-radius: {};border-width:{}px;"
-        ).format(self.half_size, self.border_width))
+        ).format(half_size, border_width))
+
+        self.border_width = border_width
+        self.half_size = half_size
+        self.full_size = full_size
 
     def update_position(self):
         parent_rect = self.parent().rect()
@@ -474,39 +486,54 @@ class NiceCheckbox(QtWidgets.QFrame):
 
     bgcolor = QtCore.Property(QtGui.QColor, bg_color, set_bg_color)
 
-    def __init__(self, checked=True, height=30, *args, **kwargs):
+    def __init__(self, checked=True, *args, **kwargs):
         super(NiceCheckbox, self).__init__(*args, **kwargs)
 
         self._checkstate = checked
+        self._first_show = True
         if checked:
             bg_color = self.checked_bg_color
         else:
             bg_color = self.unchecked_bg_color
 
-        self.half_height = int(height / 2)
-        height = self.half_height * 2
+        self.move_item = NiceCheckboxMoveWidget(self)
+
+        self._stylesheet_template = "background: rgb({},{},{});"
+
+        self.set_bg_color(bg_color)
+
+    def set_height(self, height):
+        half_height = int(height / 2)
+        height = half_height * 2
         tenth_height = int(height / 10)
 
-        self.setFixedHeight(height)
-        self.setFixedWidth((height - tenth_height) * 2)
-
-        move_item_size = height - (2 * tenth_height)
-
-        self.move_item = NiceCheckboxMoveWidget(
-            move_item_size, tenth_height, self
-        )
-        self.move_item.change_position(self._checkstate)
-
-        self._stylesheet_template = (
+        stylesheet_template = (
             "border-radius: {}px;"
             "border-width: {}px;"
             "background: #333333;"
             "border-style: solid;"
             "border-color: #555555;"
-        ).format(self.half_height, tenth_height)
-        self._stylesheet_template += "background: rgb({},{},{});"
+        ).format(half_height, tenth_height)
+        stylesheet_template += "background: rgb({},{},{});"
+        self._stylesheet_template = stylesheet_template
 
-        self.set_bg_color(bg_color)
+        self.move_item.set_size(height)
+
+        self.setFixedHeight(height)
+        self.setFixedWidth((height - self.move_item.border_width) * 2)
+
+        self.move_item.change_position(self._checkstate)
+        self.set_bg_color(self.bg_color())
+
+    def showEvent(self, event):
+        super(NiceCheckbox, self).showEvent(event)
+
+        if self._first_show:
+            self._first_show = False
+            checkbox_height = self.style().pixelMetric(
+                QtWidgets.QStyle.PM_IndicatorHeight
+            )
+            self.set_height(checkbox_height)
 
     def resizeEvent(self, event):
         super(NiceCheckbox, self).resizeEvent(event)
