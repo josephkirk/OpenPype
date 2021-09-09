@@ -197,6 +197,25 @@
 }
 ```
 
+## dict-roots
+- entity can be used only in Project settings
+- keys of dictionary are based on current project roots
+- they are not updated "live" it is required to save root changes and then
+    modify values on this entity
+    # TODO do live updates
+```
+{
+    "type": "dict-roots",
+    "key": "roots",
+    "label": "Roots",
+    "object_type": {
+        "type": "path",
+        "multiplatform": true,
+        "multipath": false
+    }
+}
+```
+
 ## dict-conditional
 - is similar to `dict` but has only one child entity that will be always available
 - the one entity is enumerator of possible values and based on value of the entity are defined and used other children entities
